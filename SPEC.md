@@ -51,7 +51,7 @@ This is not a Spring Boot application. Spark Structured Streaming is itself a lo
 | Component               | Library / Version                                        | Scope        |
 |-------------------------|----------------------------------------------------------|--------------|
 | JVM                     | Java 17 (Amazon Corretto 17 or Eclipse Temurin 17)       | runtime      |
-| Build tool              | Gradle 8.x (Kotlin DSL)                                  | build        |
+| Build tool              | Gradle 9.5.0 (Kotlin DSL)                                | build        |
 | Spark core + SQL        | `org.apache.spark:spark-sql_2.12:3.5.8`                  | provided     |
 | Spark Kafka connector   | `org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.8`       | runtime      |
 | Delta Lake              | `io.delta:delta-spark_2.12:3.3.0`                        | runtime      |
@@ -116,7 +116,7 @@ data-lakehouse/
         │       ├── config/
         │       │   └── ConfigLoaderTest.java        ← unit: env var loading
         │       └── integration/
-        │           └── IngestionJobIT.java          ← IT: Kafka + LocalStack S3
+        │           └── IngestionJobIT.java          ← IT: Kafka + S3Mock
         └── resources/
             └── logback-test.xml
 ```
