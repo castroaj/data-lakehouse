@@ -116,7 +116,7 @@ data-lakehouse/
         │       ├── config/
         │       │   └── ConfigLoaderTest.java        ← unit: env var loading
         │       └── integration/
-        │           └── IngestionJobIT.java          ← IT: Kafka + LocalStack S3
+        │           └── IngestionJobIT.java          ← IT: Kafka + S3Mock
         └── resources/
             └── logback-test.xml
 ```
