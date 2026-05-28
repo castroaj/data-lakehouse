@@ -32,7 +32,7 @@ dependencies {
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}")
 
     // Bundled in the shadow JAR
-    implementation("io.delta:delta-spark_${scalaVersion}:3.3.0")
+    implementation("io.delta:delta-spark_${scalaVersion}:3.3.2")
     implementation("org.apache.hadoop:hadoop-aws:3.3.4")
     implementation("com.amazonaws:aws-java-sdk-bundle:1.12.262")
     implementation("org.slf4j:slf4j-api:2.0.17")
