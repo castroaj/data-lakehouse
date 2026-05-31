@@ -71,6 +71,18 @@ class ConfigLoaderTest {
         }
 
         @Test
+        void loadsFromSystemPropertiesWhenEnvVarAbsent() {
+            VALID_ENV.forEach(System::setProperty);
+            try {
+                IngestionConfig config = loader.load();
+                assertThat(config.kafkaBootstrapServers()).isEqualTo("broker:9092");
+                assertThat(config.kafkaTopic()).isEqualTo("events");
+            } finally {
+                VALID_ENV.keySet().forEach(System::clearProperty);
+            }
+        }
+
+        @Test
         void overridesDefaultsWhenOptionalFieldsProvided() {
             Map<String, String> env = new HashMap<>(VALID_ENV);
             env.put(KAFKA_STARTING_OFFSETS, "earliest");
@@ -140,6 +152,14 @@ class ConfigLoaderTest {
             Map<String, String> env = new HashMap<>(VALID_ENV);
             env.put(envKey, value);
             assertConfigException(env, expectedFieldName);
+        }
+
+        @Test
+        void triggerIntervalOfOneIsAccepted() {
+            Map<String, String> env = new HashMap<>(VALID_ENV);
+            env.put(TRIGGER_INTERVAL_SECONDS, "1");
+            IngestionConfig config = loader.load(env::get);
+            assertThat(config.triggerIntervalSeconds()).isEqualTo(1);
         }
 
         @ParameterizedTest
