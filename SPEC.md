@@ -52,6 +52,7 @@ This is not a Spring Boot application. Spark Structured Streaming is itself a lo
 |-------------------------|----------------------------------------------------------|--------------|
 | JVM                     | Java 17 (Amazon Corretto 17 or Eclipse Temurin 17)       | runtime      |
 | Build tool              | Gradle 9.5.0 (Kotlin DSL)                                | build        |
+| Shadow plugin           | `com.gradleup.shadow:9.4.1`                              | build        |
 | Spark core + SQL        | `org.apache.spark:spark-sql_2.12:3.5.8`                  | provided     |
 | Spark Kafka connector   | `org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.8`       | runtime      |
 | Delta Lake              | `io.delta:delta-spark_2.12:3.3.0`                        | runtime      |
@@ -59,6 +60,8 @@ This is not a Spring Boot application. Spark Structured Streaming is itself a lo
 | AWS SDK (bundle)        | `com.amazonaws:aws-java-sdk-bundle:1.12.262`             | runtime      |
 | Logging API             | `org.slf4j:slf4j-api:2.0.17`                             | runtime      |
 | Logging impl            | `ch.qos.logback:logback-classic:1.5.23`                  | runtime      |
+| Bean Validation API     | `jakarta.validation:jakarta.validation-api:3.0.2`        | runtime      |
+| Bean Validation impl    | `org.hibernate.validator:hibernate-validator:8.0.2.Final`| runtime      |
 | JUnit 5                 | `org.junit.jupiter:junit-jupiter:5.13.4`                 | test         |
 | AssertJ                 | `org.assertj:assertj-core:3.27.3`                        | test         |
 | Mockito                 | `org.mockito:mockito-core:5.23.0`                        | test         |
@@ -127,7 +130,7 @@ data-lakehouse/
 
 ### Key concerns
 
-1. **Fat JAR** — Use the `com.github.johnrengelman.shadow` plugin to produce a deployable uber-JAR. Spark and Hadoop JARs must be excluded from the shadow output.
+1. **Fat JAR** — Use the `com.gradleup.shadow` plugin (the actively maintained GradleUp fork of the original `com.github.johnrengelman.shadow`) to produce a deployable uber-JAR. Spark and Hadoop JARs must be excluded from the shadow output.
 2. **Scala suffix** — All Spark-ecosystem artifacts must use the `_2.12` suffix; the build file must enforce this via a version catalog or explicit coordinates.
 3. **`provided` scope** — Gradle has no native `provided` scope; use `compileOnly` for Spark JARs and add them back to the `testImplementation` classpath so unit tests can instantiate `SparkSession`.
 4. **Test split** — Unit tests run with `./gradlew test`; integration tests (classes ending in `IT`) run via a separate `integrationTest` source set and task, gated to only run when Docker is available.
@@ -148,9 +151,11 @@ junit-jupiter, assertj-core, mockito-core, testcontainers-kafka, s3mock-testcont
 ### Shadow JAR exclusions
 
 The following must be excluded from the fat JAR to avoid conflicts with the cluster:
-- `META-INF/*.SF`, `META-INF/*.DSA`, `META-INF/*.RSA` (signed JAR entries)
-- `org/apache/spark/**`
-- `org/apache/hadoop/security/**` (keep hadoop-aws S3A; exclude core hadoop if already provided)
+- `META-INF/*.SF`, `META-INF/*.DSA`, `META-INF/*.RSA`, `META-INF/*.EC` (signed JAR entries — prevents `SecurityException` at runtime)
+- Spark artifacts (`org.apache.spark:*`) — already `compileOnly`, guarded against transitive re-introduction via `delta-spark`
+- Core Hadoop artifacts: `hadoop-common`, `hadoop-client`, `hadoop-client-api`, `hadoop-client-runtime`, `hadoop-hdfs`, `hadoop-yarn-*`, `hadoop-mapreduce-client-core` — keep `hadoop-aws` since S3A must be bundled
+
+The `mergeServiceFiles()` directive is required to correctly merge `META-INF/services/` entries (needed for S3A filesystem registration). `isZip64 = true` is required because `aws-java-sdk-bundle` alone exceeds 65 535 ZIP entries.
 
 ---
 
@@ -194,6 +199,12 @@ AWS credentials are resolved by the AWS Default Credential Provider Chain (env v
 
 Violations throw `ConfigurationException` (unchecked) at startup before any Spark resource is allocated.
 
+### Validation implementation
+
+Constraints are declared as Jakarta Bean Validation annotations (`@NotBlank`, `@Min`, `@Pattern`) directly on the `IngestionConfig` record components. `ConfigLoader` holds a single shared `Validator` instance (built with `HibernateValidator` and `ParameterMessageInterpolator` to avoid EL classpath requirements). After constructing the record, `VALIDATOR.validate(config)` is called; any violations are collected, sorted by field path, and joined into a single `ConfigurationException` message.
+
+`ConfigLoader.load()` reads from `System.getenv()` with fallback to `System.getProperty()`. A package-private overload `load(Function<String, String> env)` accepts an arbitrary key resolver — used by unit tests to inject a `Map::get` without touching actual environment variables.
+
 ---
 
 ## 7. Core Components
@@ -213,6 +224,8 @@ static void main(String[] args)
 ```
 
 Registers a JVM shutdown hook that calls `query.stop()` cleanly.
+
+**Implementation status**: Step 1 (ConfigLoader) is fully wired. Steps 2–5 (SparkSessionFactory, KafkaSource, JsonTransformer, DeltaSink) are stubbed — the classes and method signatures exist but throw `UnsupportedOperationException`. The current `main()` loads config, logs a startup line, and exits cleanly.
 
 ### 7.2 `SparkSessionFactory`
 
@@ -348,10 +361,10 @@ Schema evolution is handled via Delta Lake's `mergeSchema` option (off by defaul
 Application-level exceptions hierarchy:
 ```
 RuntimeException
-  └── LakehouseException               ← base unchecked domain exception
-        ├── ConfigurationException     ← invalid/missing config
-        ├── SchemaNotFoundException    ← no schema for topic
-        └── IngestionException         ← wraps unexpected runtime errors
+  └── LakehouseException               ← base unchecked domain exception  ✓ implemented
+        ├── ConfigurationException     ← invalid/missing config             ✓ implemented
+        ├── SchemaNotFoundException    ← no schema for topic                (planned)
+        └── IngestionException         ← wraps unexpected runtime errors    (planned)
 ```
 
 ---
@@ -411,11 +424,11 @@ Spark's built-in `StreamingQueryListener` can be implemented to push per-batch m
 
 Target: pure logic with no external dependencies.
 
-| Class under test    | Test class               | What is tested                                              |
-|---------------------|--------------------------|-------------------------------------------------------------|
-| `ConfigLoader`      | `ConfigLoaderTest`       | Required field validation, defaults, type coercion          |
-| `JsonTransformer`   | `JsonTransformerTest`    | Valid parse, malformed row routing, metadata column appends |
-| `SchemaRegistry`    | `SchemaRegistryTest`     | Known topic returns schema, unknown topic throws            |
+| Class under test    | Test class               | What is tested                                              | Status       |
+|---------------------|--------------------------|-------------------------------------------------------------|--------------|
+| `ConfigLoader`      | `ConfigLoaderTest`       | Required field validation, defaults, type coercion          | ✓ complete   |
+| `JsonTransformer`   | `JsonTransformerTest`    | Valid parse, malformed row routing, metadata column appends | stub only    |
+| `SchemaRegistry`    | `SchemaRegistryTest`     | Known topic returns schema, unknown topic throws            | not created  |
 
 `JsonTransformerTest` creates a local `SparkSession` in `local[1]` mode (fast; no cluster needed) using an in-memory DataFrame as input. This is standard practice for Spark unit tests.
 
@@ -423,9 +436,9 @@ Target: pure logic with no external dependencies.
 
 Require Docker. Use Testcontainers.
 
-| Test class           | Containers                       | What is tested                                                         |
-|----------------------|----------------------------------|------------------------------------------------------------------------|
-| `IngestionJobIT`     | `KafkaContainer`, `S3MockContainer` | Full end-to-end: produce messages → run job → assert Delta table on mock S3 |
+| Test class           | Containers                       | What is tested                                                              | Status    |
+|----------------------|----------------------------------|-----------------------------------------------------------------------------|-----------|
+| `IngestionJobIT`     | `KafkaContainer`, `S3MockContainer` | Full end-to-end: produce messages → run job → assert Delta table on mock S3 | stub only |
 
 `S3MockContainer` (`com.adobe.testing:s3mock-testcontainers`) exposes an S3-compatible HTTP endpoint with no auth required. `SparkSessionFactory` sets `fs.s3a.endpoint` to the S3Mock URL and `fs.s3a.path.style.access=true` for compatibility.
 
