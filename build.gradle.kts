@@ -37,6 +37,8 @@ dependencies {
     implementation("com.amazonaws:aws-java-sdk-bundle:1.12.262")
     implementation("org.slf4j:slf4j-api:2.0.17")
     runtimeOnly("ch.qos.logback:logback-classic:1.5.23")
+    implementation("jakarta.validation:jakarta.validation-api:3.0.2")
+    implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
 
     // Test dependencies
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
