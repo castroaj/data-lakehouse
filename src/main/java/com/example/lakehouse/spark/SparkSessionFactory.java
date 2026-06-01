@@ -1,15 +1,34 @@
 package com.example.lakehouse.spark;
 
-import com.example.lakehouse.config.IngestionConfig;
 import org.apache.spark.sql.SparkSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.example.lakehouse.config.IngestionConfig;
+
+/**
+ * Factory for creating SparkSession instances configured for our Lakehouse
+ * ingestion job
+ * 
+ * @author Alexander Castro
+ */
 public class SparkSessionFactory {
 
     private static final Logger log = LoggerFactory.getLogger(SparkSessionFactory.class);
 
-    public SparkSession create(IngestionConfig config) {
+    /**
+     * Private constructor for utility class - prevents instantiation
+     */
+    private SparkSessionFactory() {
+    }
+
+    /**
+     * Creates and configures a SparkSession based on the provided IngestionConfig
+     * 
+     * @param config
+     * @return
+     */
+    public static SparkSession createDeltaSparkSession(IngestionConfig config) {
         SparkSession spark = SparkSession.builder()
                 .master(config.sparkMaster())
                 .appName(config.sparkAppName())
