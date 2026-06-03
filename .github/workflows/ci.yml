@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # nebula-release infers version from git tag history — full depth required
           fetch-depth: 0
@@ -34,7 +34,7 @@ jobs:
         run: ./gradlew build
 
       - name: Upload shadow JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: data-lakehouse-ingestion-${{ github.sha }}
           path: build/libs/*-all.jar
@@ -43,7 +43,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ github.sha }}
           path: build/reports/tests/
