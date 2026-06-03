@@ -30,8 +30,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build and test
-        run: ./gradlew build
+      - name: Test Project
+        run: ./gradlew test --info --stacktrace
+
+      - name: Build Project
+        run: ./gradlew build --info --stacktrace
 
       - name: Upload shadow JAR
         uses: actions/upload-artifact@v7
