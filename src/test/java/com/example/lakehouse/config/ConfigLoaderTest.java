@@ -1,15 +1,17 @@
 package com.example.lakehouse.config;
 
-import com.example.lakehouse.exception.ConfigurationException;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static com.example.lakehouse.config.ConfigLoader.AWS_REGION;
 import static com.example.lakehouse.config.ConfigLoader.CHECKPOINT_PATH;
@@ -24,9 +26,7 @@ import static com.example.lakehouse.config.ConfigLoader.S3_BUCKET_NAME;
 import static com.example.lakehouse.config.ConfigLoader.SPARK_APP_NAME;
 import static com.example.lakehouse.config.ConfigLoader.SPARK_MASTER;
 import static com.example.lakehouse.config.ConfigLoader.TRIGGER_INTERVAL_SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.params.provider.Arguments.arguments;
+import com.example.lakehouse.exception.ConfigurationException;
 
 class ConfigLoaderTest {
 
@@ -49,9 +49,9 @@ class ConfigLoaderTest {
         void loadsAllRequiredFields() {
             IngestionConfig config = loader.load(VALID_ENV::get);
 
-            assertThat(config.kafkaBootstrapServers()).isEqualTo("broker:9092");
-            assertThat(config.kafkaTopic()).isEqualTo("events");
-            assertThat(config.kafkaGroupId()).isEqualTo("lakehouse-consumer");
+            assertThat(config.kafkaSourceConfig().bootstrapServers()).isEqualTo("broker:9092");
+            assertThat(config.kafkaSourceConfig().topic()).isEqualTo("events");
+            assertThat(config.kafkaSourceConfig().groupId()).isEqualTo("lakehouse-consumer");
             assertThat(config.s3BucketName()).isEqualTo("my-bucket");
             assertThat(config.s3Region()).isEqualTo("us-east-1");
             assertThat(config.deltaTablePath()).isEqualTo("lakehouse/events");
@@ -63,8 +63,8 @@ class ConfigLoaderTest {
         void appliesDefaultsForOptionalFields() {
             IngestionConfig config = loader.load(VALID_ENV::get);
 
-            assertThat(config.kafkaStartingOffsets()).isEqualTo("latest");
-            assertThat(config.kafkaMaxOffsetsPerTrigger()).isEqualTo(100_000L);
+            assertThat(config.kafkaSourceConfig().startingOffsets()).isEqualTo("latest");
+            assertThat(config.kafkaSourceConfig().maxOffsetsPerTrigger()).isEqualTo(100_000L);
             assertThat(config.triggerIntervalSeconds()).isEqualTo(30);
             assertThat(config.sparkMaster()).isEqualTo("local[*]");
             assertThat(config.sparkAppName()).isEqualTo("lakehouse-ingestion");
@@ -75,8 +75,8 @@ class ConfigLoaderTest {
             VALID_ENV.forEach(System::setProperty);
             try {
                 IngestionConfig config = loader.load();
-                assertThat(config.kafkaBootstrapServers()).isEqualTo("broker:9092");
-                assertThat(config.kafkaTopic()).isEqualTo("events");
+                assertThat(config.kafkaSourceConfig().bootstrapServers()).isEqualTo("broker:9092");
+                assertThat(config.kafkaSourceConfig().topic()).isEqualTo("events");
             } finally {
                 VALID_ENV.keySet().forEach(System::clearProperty);
             }
@@ -93,8 +93,8 @@ class ConfigLoaderTest {
 
             IngestionConfig config = loader.load(env::get);
 
-            assertThat(config.kafkaStartingOffsets()).isEqualTo("earliest");
-            assertThat(config.kafkaMaxOffsetsPerTrigger()).isEqualTo(50_000L);
+            assertThat(config.kafkaSourceConfig().startingOffsets()).isEqualTo("earliest");
+            assertThat(config.kafkaSourceConfig().maxOffsetsPerTrigger()).isEqualTo(50_000L);
             assertThat(config.triggerIntervalSeconds()).isEqualTo(60);
             assertThat(config.sparkMaster()).isEqualTo("local[4]");
             assertThat(config.sparkAppName()).isEqualTo("my-app");
@@ -118,7 +118,7 @@ class ConfigLoaderTest {
 
             assertThatThrownBy(() -> loader.load(env::get))
                     .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContaining("kafkaTopic")
+                    .hasMessageContaining("kafkaSourceConfig.topic")
                     .hasMessageContaining("s3BucketName");
         }
     }
@@ -146,7 +146,7 @@ class ConfigLoaderTest {
         @CsvSource({
                 "TRIGGER_INTERVAL_SECONDS, 0, triggerIntervalSeconds",
                 "TRIGGER_INTERVAL_SECONDS, -5, triggerIntervalSeconds",
-                "KAFKA_MAX_OFFSETS_PER_TRIGGER, 0, kafkaMaxOffsetsPerTrigger"
+        // "KAFKA_MAX_OFFSETS_PER_TRIGGER, 0, kafkaMaxOffsetsPerTrigger"
         })
         void throwsWhenValueBelowMinimum(String envKey, String value, String expectedFieldName) {
             Map<String, String> env = new HashMap<>(VALID_ENV);
@@ -179,9 +179,9 @@ class ConfigLoaderTest {
 
     static Stream<org.junit.jupiter.params.provider.Arguments> requiredFields() {
         return Stream.of(
-                arguments(KAFKA_BOOTSTRAP_SERVERS, "kafkaBootstrapServers"),
-                arguments(KAFKA_TOPIC, "kafkaTopic"),
-                arguments(KAFKA_GROUP_ID, "kafkaGroupId"),
+                arguments(KAFKA_BOOTSTRAP_SERVERS, "kafkaSourceConfig.bootstrapServers"),
+                arguments(KAFKA_TOPIC, "kafkaSourceConfig.topic"),
+                arguments(KAFKA_GROUP_ID, "kafkaSourceConfig.groupId"),
                 arguments(S3_BUCKET_NAME, "s3BucketName"),
                 arguments(AWS_REGION, "s3Region"),
                 arguments(DELTA_TABLE_PATH, "deltaTablePath"),

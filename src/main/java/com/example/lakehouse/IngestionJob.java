@@ -15,7 +15,7 @@ public class IngestionJob {
     public static void main(String[] args) {
         IngestionConfig config;
         try {
-            config = new ConfigLoader().load();
+            config = (IngestionConfig) new ConfigLoader().load();
         } catch (ConfigurationException e) {
             log.error("Configuration validation failed: {}", e.getMessage());
             System.exit(1);
@@ -27,6 +27,7 @@ public class IngestionJob {
 
         // TODO: wire ConfigLoader → SparkSessionFactory → KafkaSource → JsonTransformer
         // → DeltaSink
-        log.info("app={} topic={} master={}", config.sparkAppName(), config.kafkaTopic(), config.sparkMaster());
+        log.info("app={} topic={} master={}", config.sparkAppName(), config.kafkaSourceConfig().topic(),
+                config.sparkMaster());
     }
 }
