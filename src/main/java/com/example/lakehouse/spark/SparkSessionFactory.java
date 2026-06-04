@@ -40,7 +40,9 @@ public class SparkSessionFactory {
                 .config("spark.hadoop.fs.s3a.path.style.access", "true")
                 .getOrCreate();
 
-        log.info("app={} master={} topic={}", config.sparkAppName(), config.sparkMaster(), config.kafkaTopic());
+        log.info("SPARK: app={} master={}",
+                config.sparkAppName(),
+                config.sparkMaster());
         return spark;
     }
 }

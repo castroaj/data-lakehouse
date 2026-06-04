@@ -36,7 +36,7 @@ dependencies {
     implementation("org.apache.hadoop:hadoop-aws:3.3.4")
     implementation("com.amazonaws:aws-java-sdk-bundle:1.12.262")
     implementation("org.slf4j:slf4j-api:2.0.17")
-    runtimeOnly("ch.qos.logback:logback-classic:1.5.23")
+    runtimeOnly("ch.qos.logback:logback-classic:1.5.33")
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
     implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
 
@@ -44,6 +44,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation("org.mockito:mockito-core:5.23.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.23.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
