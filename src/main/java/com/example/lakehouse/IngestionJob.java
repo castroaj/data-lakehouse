@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.example.lakehouse.config.ConfigLoader;
 import com.example.lakehouse.config.IngestionConfig;
 import com.example.lakehouse.exception.ConfigurationException;
+import com.example.lakehouse.spark.SparkSessionFactory;
 
 public class IngestionJob {
 
@@ -14,15 +15,19 @@ public class IngestionJob {
     public static void main(String[] args) {
         IngestionConfig config;
         try {
-            config = new ConfigLoader().load();
+            config = (IngestionConfig) new ConfigLoader().load();
         } catch (ConfigurationException e) {
             log.error("Configuration validation failed: {}", e.getMessage());
             System.exit(1);
-            return; // unreachable; satisfies definite-assignment since the compiler doesn't know System.exit never returns
+            return;
         }
+
+        // Construct the delta spark session
+        var deltaSparkSession = SparkSessionFactory.createDeltaSparkSession(config);
 
         // TODO: wire ConfigLoader → SparkSessionFactory → KafkaSource → JsonTransformer
         // → DeltaSink
-        log.info("app={} topic={} master={}", config.sparkAppName(), config.kafkaTopic(), config.sparkMaster());
+        log.info("app={} topic={} master={}", config.sparkAppName(), config.kafkaSourceConfig().topic(),
+                config.sparkMaster());
     }
 }
