@@ -8,6 +8,7 @@ import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import com.example.lakehouse.exception.ConfigurationException;
+import com.example.lakehouse.ingestion.kafka.KafkaSourceConfig;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -20,6 +21,9 @@ import jakarta.validation.Validator;
  * @author Alexander Castro
  */
 public class ConfigLoader {
+
+    private static final String DEFAULT_STARTING_OFFSETS = "latest";
+    private static final long DEFAULT_MAX_OFFSETS_PER_TRIGGER = 100_000L;
 
     public static final String KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS";
     public static final String KAFKA_TOPIC = "KAFKA_TOPIC";
@@ -68,12 +72,17 @@ public class ConfigLoader {
      * @throws ConfigurationException if validation fails
      */
     IngestionConfig load(Function<String, String> env) {
-        IngestionConfig config = new IngestionConfig(
+
+        var kafkaSourceConfig = new KafkaSourceConfig(
                 env.apply(KAFKA_BOOTSTRAP_SERVERS),
                 env.apply(KAFKA_TOPIC),
                 env.apply(KAFKA_GROUP_ID),
-                defaultString(env.apply(KAFKA_STARTING_OFFSETS), "latest"),
-                parseLong(KAFKA_MAX_OFFSETS_PER_TRIGGER, env.apply(KAFKA_MAX_OFFSETS_PER_TRIGGER), 100_000L),
+                defaultString(env.apply(KAFKA_STARTING_OFFSETS), DEFAULT_STARTING_OFFSETS),
+                parseLong(KAFKA_MAX_OFFSETS_PER_TRIGGER, env.apply(KAFKA_MAX_OFFSETS_PER_TRIGGER),
+                        DEFAULT_MAX_OFFSETS_PER_TRIGGER));
+
+        IngestionConfig ingestionConfig = new IngestionConfig(
+                kafkaSourceConfig,
                 env.apply(S3_BUCKET_NAME),
                 env.apply(AWS_REGION),
                 env.apply(DELTA_TABLE_PATH),
@@ -83,7 +92,7 @@ public class ConfigLoader {
                 defaultString(env.apply(SPARK_MASTER), "local[*]"),
                 defaultString(env.apply(SPARK_APP_NAME), "lakehouse-ingestion"));
 
-        Set<ConstraintViolation<IngestionConfig>> violations = VALIDATOR.validate(config);
+        Set<ConstraintViolation<IngestionConfig>> violations = VALIDATOR.validate(ingestionConfig);
         if (!violations.isEmpty()) {
             String details = violations.stream()
                     .map(v -> v.getPropertyPath() + ": " + v.getMessage())
@@ -92,7 +101,7 @@ public class ConfigLoader {
             throw new ConfigurationException("Configuration validation failed: " + details);
         }
 
-        return config;
+        return ingestionConfig;
     }
 
     /**

@@ -1,20 +1,20 @@
 ---
 name: java-coding-standards
-description: "Java coding standards for Spring Boot services: naming, immutability, Optional usage, streams, exceptions, generics, and project layout."
-origin: ECC
+description: "Java coding standards: naming, immutability, Optional usage, streams, exceptions, generics, and project layout."
 ---
 
 # Java Coding Standards
 
-Standards for readable, maintainable Java (17+) code in Spring Boot services.
+Standards for readable, maintainable Java (17+) code in backend services.
 
 ## When to Activate
 
-- Writing or reviewing Java code in Spring Boot projects
+- Writing or reviewing Java code for backend services
 - Enforcing naming, immutability, or exception handling conventions
 - Working with records, sealed classes, or pattern matching (Java 17+)
 - Reviewing use of Optional, streams, or generics
 - Structuring packages and project layout
+- Writing unit or integration tests (JUnit 5 + Testcontainers)
 
 ## Core Principles
 
@@ -22,6 +22,8 @@ Standards for readable, maintainable Java (17+) code in Spring Boot services.
 - Immutable by default; minimize shared mutable state
 - Fail fast with meaningful exceptions
 - Consistent naming and package structure
+- Observable code with logging and metrics (slf4j + Micrometer)
+- Test real behavior, not implementation details; avoid over-mocking
 
 ## Naming
 
@@ -75,6 +77,22 @@ List<String> names = markets.stream()
 // FAIL: Avoid complex nested streams; prefer loops for clarity
 ```
 
+## Logging
+
+```java
+// PASS: Use slf4j with parameterized messages
+private static final Logger logger = LoggerFactory.getLogger(ClassName.class);
+
+// PASS: Structured logging with parameters
+logger.info("Processing market: {}", market.getName());
+
+// FAIL: Avoid string concatenation in logs
+logger.info("Processing market: " + market.getName());
+
+// FAIL: Avoid logging sensitive information
+logger.info("User login attempt: username={}, password={}", username, password);
+```
+
 ## Exceptions
 
 - Use unchecked exceptions for domain errors; wrap technical exceptions with context
@@ -124,14 +142,6 @@ src/test/java/... (mirrors main)
 - Magic numbers → named constants
 - Static mutable state → prefer dependency injection
 - Silent catch blocks → log and act or rethrow
-
-## Logging
-
-```java
-private static final Logger log = LoggerFactory.getLogger(MarketService.class);
-log.info("fetch_market slug={}", slug);
-log.error("failed_fetch_market slug={}", slug, ex);
-```
 
 ## Null Handling
 

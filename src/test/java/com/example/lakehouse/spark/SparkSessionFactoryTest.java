@@ -9,15 +9,25 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import com.example.lakehouse.config.IngestionConfig;
+import com.example.lakehouse.ingestion.kafka.KafkaSourceConfig;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SparkSessionFactoryTest {
 
     private static final IngestionConfig CONFIG = new IngestionConfig(
-            "broker:9092", "events", "group", "latest", 100_000L,
-            "my-bucket", "us-east-1",
-            "lakehouse/events", "checkpoints/events", "dead-letter/events",
-            30, "local[1]", "test-app");
+            new KafkaSourceConfig("broker:9092",
+                    "events",
+                    "group",
+                    "latest",
+                    100_000L),
+            "my-bucket",
+            "us-east-1",
+            "lakehouse/events",
+            "checkpoints/events",
+            "dead-letter/events",
+            30,
+            "local[1]",
+            "test-app");
 
     private SparkSession spark;
 
