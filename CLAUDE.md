@@ -43,6 +43,18 @@ DeltaSink.write() → two concurrent writeStream() queries
 
 `IngestionJob.main()` owns the wiring. `query.awaitTermination()` blocks until the job is stopped or crashes. A JVM shutdown hook calls `query.stop()` for clean termination.
 
+> **Note:** `IngestionJob` is not fully wired yet — `KafkaSource → JsonTransformer → DeltaSink` remain TODOs. Only `ConfigLoader → SparkSessionFactory` is connected.
+
+### Source abstraction
+
+The ingestion layer has a two-level interface hierarchy:
+
+- `Source` — top-level `AutoCloseable` interface with a single `readStream()` method; any streaming data source implements this
+- `IKafkaSource extends Source` — adds `readBatch(KafkaOffsetRange)` for bounded reads (backfill / replay)
+- `KafkaSource implements IKafkaSource` — concrete Kafka implementation; accepts either `IngestionConfig` or `KafkaSourceConfig` directly
+
+Kafka-specific configuration is isolated in `KafkaSourceConfig` (a record with Bean Validation constraints), nested inside `IngestionConfig` via the `kafkaSourceConfig()` accessor.
+
 ### Classpath split — critical to understand
 
 Spark is `compileOnly` (provided by the cluster at runtime). `delta-spark` is `implementation` (bundled). Delta Lake's own code lives partly in the `org.apache.spark.sql.delta.*` namespace — those ~2000 classes in the shadow JAR are Delta's code, not Spark core.
@@ -55,7 +67,9 @@ The `aws-java-sdk-bundle` and `hadoop-aws` versions are pinned to exactly what S
 
 All runtime config comes from environment variables (no config files deployed with the JAR). `ConfigLoader` reads env vars → builds the immutable `IngestionConfig` record → throws `ConfigurationException` on any validation failure before Spark starts.
 
-`DELTA_TABLE_PATH`, `CHECKPOINT_PATH`, and `DEAD_LETTER_PATH` are path segments relative to `S3_BUCKET_NAME`; the application prepends `s3a://<bucket>/`.
+`IngestionConfig` has 9 fields: a nested `KafkaSourceConfig` (bootstrapServers, topic, groupId, startingOffsets, maxOffsetsPerTrigger), plus s3BucketName, s3Region, deltaTablePath, checkpointPath, deadLetterPath, triggerIntervalSeconds, sparkMaster, and sparkAppName. Both records use Jakarta Bean Validation (`@NotBlank`, `@Pattern`, `@Min`, `@Valid`) enforced by `ConfigLoader`.
+
+`DELTA_TABLE_PATH`, `CHECKPOINT_PATH`, and `DEAD_LETTER_PATH` are path segments relative to `S3_BUCKET_NAME`; the application prepends `s3a://<bucket>/`. Supplying an `s3a://` URI directly is rejected by a `@Pattern` constraint.
 
 ### Schema
 
@@ -83,6 +97,14 @@ Integration tests (`*IT.java`) use Testcontainers:
 |---|---|
 | `SPEC.md` | Full design spec — authoritative source for component contracts, config model, error handling, and testing strategy |
 | `build.gradle.kts` | Single build file; all dependency versions are inlined here |
-| `src/main/java/com/example/lakehouse/IngestionJob.java` | `main()` entry point |
-| `src/main/java/com/example/lakehouse/config/IngestionConfig.java` | Immutable config record (all 13 fields) |
+| `src/main/java/com/example/lakehouse/IngestionJob.java` | `main()` entry point (partially wired) |
+| `src/main/java/com/example/lakehouse/config/IngestionConfig.java` | Immutable config record (9 fields; Kafka settings nested in `KafkaSourceConfig`) |
+| `src/main/java/com/example/lakehouse/config/ConfigLoader.java` | Reads env vars, validates with Jakarta Bean Validation, throws `ConfigurationException` |
+| `src/main/java/com/example/lakehouse/ingestion/Source.java` | Top-level source interface (`AutoCloseable` + `readStream()`) |
+| `src/main/java/com/example/lakehouse/ingestion/kafka/IKafkaSource.java` | Kafka-specific source interface; adds `readBatch(KafkaOffsetRange)` |
+| `src/main/java/com/example/lakehouse/ingestion/kafka/KafkaSource.java` | Concrete Kafka source implementing `IKafkaSource` |
+| `src/main/java/com/example/lakehouse/ingestion/kafka/KafkaSourceConfig.java` | Kafka config record with Bean Validation constraints |
+| `src/main/java/com/example/lakehouse/exception/LakehouseException.java` | Abstract base exception for all application exceptions |
+| `src/main/java/com/example/lakehouse/exception/ConfigurationException.java` | Thrown when config validation fails |
 | `src/main/java/com/example/lakehouse/transform/SchemaRegistry.java` | Topic → StructType mapping |
+| `src/main/java/com/example/lakehouse/util/SchemaUtil.java` | Placeholder for shared StructType helpers |
