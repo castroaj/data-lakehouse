@@ -31,6 +31,9 @@ public class KafkaSource implements IKafkaSource {
     private static final String OPT_STARTING_OFFSETS = "startingOffsets";
     private static final String OPT_ENDING_OFFSETS = "endingOffsets";
     private static final String OPT_MAX_OFFSETS_PER_TRIGGER = "maxOffsetsPerTrigger";
+    // Prevents job crash when Kafka log compaction or retention expiry removes offsets
+    // the consumer hasn't read yet; such gaps are expected in long-running pipelines.
+    private static final String OPT_FAIL_ON_DATA_LOSS = "failOnDataLoss";
 
     // Spark passes kafka.* options directly to the underlying Kafka consumer.
     // The suffix is taken from the public ConsumerConfig constants in
@@ -95,6 +98,7 @@ public class KafkaSource implements IKafkaSource {
                 .option(OPT_GROUP_ID, config.groupId())
                 .option(OPT_STARTING_OFFSETS, config.startingOffsets())
                 .option(OPT_MAX_OFFSETS_PER_TRIGGER, config.maxOffsetsPerTrigger())
+                .option(OPT_FAIL_ON_DATA_LOSS, false)
                 .load();
     }
 
