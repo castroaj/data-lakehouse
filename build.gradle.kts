@@ -34,7 +34,7 @@ dependencies {
     // Bundled in the shadow JAR
     implementation("io.delta:delta-spark_${scalaVersion}:3.3.0")
     implementation("org.apache.hadoop:hadoop-aws:3.3.4")
-    implementation("com.amazonaws:aws-java-sdk-bundle:1.12.262")
+    implementation("com.amazonaws:aws-java-sdk-bundle:1.12.797")
     implementation("org.slf4j:slf4j-api:2.0.17")
     runtimeOnly("ch.qos.logback:logback-classic:1.5.33")
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
