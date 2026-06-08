@@ -37,7 +37,7 @@ dependencies {
     implementation("com.amazonaws:aws-java-sdk-bundle:1.12.262")
     implementation("org.slf4j:slf4j-api:2.0.17")
     runtimeOnly("ch.qos.logback:logback-classic:1.5.33")
-    implementation("jakarta.validation:jakarta.validation-api:3.0.2")
+    implementation("jakarta.validation:jakarta.validation-api:3.1.1")
     implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
     implementation("org.apache.avro:avro:1.11.3")
     implementation("io.micrometer:micrometer-registry-prometheus:1.15.1")
