@@ -23,5 +23,6 @@ public record IngestionConfig(
         @Min(value = 1, message = "TRIGGER_INTERVAL_SECONDS must be at least 1") int triggerIntervalSeconds,
         String sparkMaster,
         String sparkAppName,
-        @Valid MetricsConfig metricsConfig) {
+        @Valid MetricsConfig metricsConfig,
+        @Valid DeltaSinkConfig deltaSinkConfig) {
 }

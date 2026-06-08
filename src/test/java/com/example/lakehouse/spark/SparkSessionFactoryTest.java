@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import com.example.lakehouse.config.DeltaSinkConfig;
 import com.example.lakehouse.config.IngestionConfig;
 import com.example.lakehouse.config.MetricsConfig;
 import com.example.lakehouse.ingestion.kafka.KafkaSourceConfig;
@@ -29,7 +30,8 @@ class SparkSessionFactoryTest {
             30,
             "local[1]",
             "test-app",
-            new MetricsConfig(9090));
+            new MetricsConfig(9090),
+            DeltaSinkConfig.defaults());
 
     private SparkSession spark;
 
