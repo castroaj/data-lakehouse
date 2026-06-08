@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import com.example.lakehouse.config.IngestionConfig;
+import com.example.lakehouse.config.MetricsConfig;
 import com.example.lakehouse.ingestion.kafka.KafkaSourceConfig;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -27,7 +28,8 @@ class SparkSessionFactoryTest {
             "dead-letter/events",
             30,
             "local[1]",
-            "test-app");
+            "test-app",
+            new MetricsConfig(9090));
 
     private SparkSession spark;
 
