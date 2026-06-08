@@ -10,17 +10,18 @@ import jakarta.validation.constraints.Pattern;
 /**
  * Configuration for the ingestion job, loaded from environment variables or
  * system properties
- * 
+ *
  * @author Alexander Castro
  */
 public record IngestionConfig(
         @Valid KafkaSourceConfig kafkaSourceConfig,
-        @NotBlank String s3BucketName,
-        @NotBlank String s3Region,
-        @NotBlank @Pattern(regexp = "^(?!s3a://).*", message = "must be a relative path, not an s3a:// URI") String deltaTablePath,
-        @NotBlank @Pattern(regexp = "^(?!s3a://).*", message = "must be a relative path, not an s3a:// URI") String checkpointPath,
-        @NotBlank @Pattern(regexp = "^(?!s3a://).*", message = "must be a relative path, not an s3a:// URI") String deadLetterPath,
-        @Min(1) int triggerIntervalSeconds,
+        @NotBlank(message = "S3_BUCKET_NAME must not be blank") String s3BucketName,
+        @NotBlank(message = "AWS_REGION must not be blank") String s3Region,
+        @NotBlank @Pattern(regexp = "^(?!s3a://).*", message = "DELTA_TABLE_PATH must be a relative path, not an s3a:// URI") String deltaTablePath,
+        @NotBlank @Pattern(regexp = "^(?!s3a://).*", message = "CHECKPOINT_PATH must be a relative path, not an s3a:// URI") String checkpointPath,
+        @NotBlank @Pattern(regexp = "^(?!s3a://).*", message = "DEAD_LETTER_PATH must be a relative path, not an s3a:// URI") String deadLetterPath,
+        @Min(value = 1, message = "TRIGGER_INTERVAL_SECONDS must be at least 1") int triggerIntervalSeconds,
         String sparkMaster,
-        String sparkAppName) {
+        String sparkAppName,
+        @Valid MetricsConfig metricsConfig) {
 }

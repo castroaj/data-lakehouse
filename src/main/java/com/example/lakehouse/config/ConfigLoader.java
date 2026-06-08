@@ -24,6 +24,7 @@ public class ConfigLoader {
 
     private static final String DEFAULT_STARTING_OFFSETS = "latest";
     private static final long DEFAULT_MAX_OFFSETS_PER_TRIGGER = 100_000L;
+    private static final int DEFAULT_METRICS_PORT = 9090;
 
     public static final String KAFKA_BOOTSTRAP_SERVERS = "KAFKA_BOOTSTRAP_SERVERS";
     public static final String KAFKA_TOPIC = "KAFKA_TOPIC";
@@ -38,6 +39,7 @@ public class ConfigLoader {
     public static final String TRIGGER_INTERVAL_SECONDS = "TRIGGER_INTERVAL_SECONDS";
     public static final String SPARK_MASTER = "SPARK_MASTER";
     public static final String SPARK_APP_NAME = "SPARK_APP_NAME";
+    public static final String METRICS_PORT = "METRICS_PORT";
 
     // Reuse a single Validator instance since they are thread-safe and expensive to
     // create
@@ -81,6 +83,9 @@ public class ConfigLoader {
                 parseLong(KAFKA_MAX_OFFSETS_PER_TRIGGER, env.apply(KAFKA_MAX_OFFSETS_PER_TRIGGER),
                         DEFAULT_MAX_OFFSETS_PER_TRIGGER));
 
+        var metricsConfig = new MetricsConfig(
+                parseInt(METRICS_PORT, env.apply(METRICS_PORT), DEFAULT_METRICS_PORT));
+
         IngestionConfig ingestionConfig = new IngestionConfig(
                 kafkaSourceConfig,
                 env.apply(S3_BUCKET_NAME),
@@ -90,7 +95,8 @@ public class ConfigLoader {
                 env.apply(DEAD_LETTER_PATH),
                 parseInt(TRIGGER_INTERVAL_SECONDS, env.apply(TRIGGER_INTERVAL_SECONDS), 30),
                 defaultString(env.apply(SPARK_MASTER), "local[*]"),
-                defaultString(env.apply(SPARK_APP_NAME), "lakehouse-ingestion"));
+                defaultString(env.apply(SPARK_APP_NAME), "lakehouse-ingestion"),
+                metricsConfig);
 
         Set<ConstraintViolation<IngestionConfig>> violations = VALIDATOR.validate(ingestionConfig);
         if (!violations.isEmpty()) {

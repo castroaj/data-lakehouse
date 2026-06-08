@@ -2,6 +2,12 @@ package com.example.lakehouse.util;
 
 import org.apache.spark.sql.types.StructType;
 
+/**
+ * Placeholder for shared helpers for building and inspecting Spark
+ * {@link org.apache.spark.sql.types.StructType} definitions.
+ *
+ * @author Alexander Castro
+ */
 public class SchemaUtil {
 
     // TODO: shared helpers for building and inspecting StructType definitions

@@ -39,6 +39,8 @@ dependencies {
     runtimeOnly("ch.qos.logback:logback-classic:1.5.33")
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
     implementation("org.hibernate.validator:hibernate-validator:8.0.2.Final")
+    implementation("org.apache.avro:avro:1.11.3")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.15.1")
 
     // Test dependencies
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")

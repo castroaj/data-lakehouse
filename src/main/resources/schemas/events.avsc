@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "Event",
+  "namespace": "com.example.lakehouse",
+  "fields": [
+    {"name": "event_id",   "type": "string"},
+    {"name": "event_type", "type": "string"},
+    {"name": "user_id",    "type": ["null", "string"], "default": null},
+    {"name": "timestamp",  "type": "long"},
+    {"name": "payload",    "type": ["null", "string"], "default": null}
+  ]
+}
