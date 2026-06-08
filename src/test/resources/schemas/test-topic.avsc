@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "TestEvent",
+  "namespace": "com.example.lakehouse",
+  "fields": [
+    {"name": "id",       "type": "string"},
+    {"name": "count",    "type": "int"},
+    {"name": "score",    "type": "double"},
+    {"name": "active",   "type": "boolean"},
+    {"name": "optional", "type": ["null", "string"], "default": null}
+  ]
+}
